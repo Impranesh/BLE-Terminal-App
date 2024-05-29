@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "169956631613",
+    "project_id": "ble-connector-95762",
+    "storage_bucket": "ble-connector-95762.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:169956631613:android:1fc15678fcdda3da79b654",
+        "android_client_info": {
+          "package_name": "com.example.ble"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIoXEU3P8CE3KT5zNV4YT-gmqu-ZCe1XQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
