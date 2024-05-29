@@ -8,11 +8,15 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -35,6 +39,8 @@ class ScanActivity : AppCompatActivity() {
 
     private val bluetoothEnableRequestCode = 1001
     private val locationPermissionRequestCode = 1002
+    private val nearbyDevicesPermissionRequestCode=1003
+    private val locationEnableRequestCode=1004
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,18 +58,77 @@ class ScanActivity : AppCompatActivity() {
 
         // Set click listeners for start and stop scan buttons
         binding.btnStartScan.setOnClickListener {
-            if (hasLocationPermission()) {
-                startScan()
-            } else {
-                requestLocationPermission()
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+                if(hasLocationPermission()){
+                    if(hasNearbyDevicesPermission()){
+                        startScan()
+                    }else{
+                        requestNearbyDevicesPermission()
+                    }
+                }else{
+                    requestLocationPermission()
+                }
+            }else {
+                if (hasLocationPermission()) {
+                    startScan()
+                } else {
+                    requestLocationPermission()
+                }
             }
         }
     }
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
 
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == locationPermissionRequestCode) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if(hasNearbyDevicesPermission()) {
+                    startScan()
+                }else{
+                    requestNearbyDevicesPermission()
+                }
+            } else {
+                Toast.makeText(this, "Location permission is required to scan for Bluetooth devices", Toast.LENGTH_SHORT).show()
+            }
+        }else if(requestCode==nearbyDevicesPermissionRequestCode){
+            if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.S) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startScan()
+                } else {
+                    Toast.makeText(this, "Nearby Devices permission is required to scan for Bluetooth devices", Toast.LENGTH_SHORT).show()
+                }
+            }else{
+                //
+                startScan()
+            }
+        }
+    }
+    private fun hasNearbyDevicesPermission():Boolean{
+        return if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(this,Manifest.permission.BLUETOOTH_CONNECT)==PackageManager.PERMISSION_GRANTED
+        }else{
+            true
+        }
+    }
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     }
 
+    private fun requestNearbyDevicesPermission(){
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT),
+            nearbyDevicesPermissionRequestCode
+        )
+    }
     private fun requestLocationPermission() {
         ActivityCompat.requestPermissions(
             this,
@@ -74,18 +139,6 @@ class ScanActivity : AppCompatActivity() {
             locationPermissionRequestCode
         )
     }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == locationPermissionRequestCode) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startScan()
-            } else {
-                Toast.makeText(this, "Location permission is required to scan for Bluetooth devices", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     @SuppressLint("MissingPermission")
     private fun startScan() {
         if (!scanning) {
@@ -93,7 +146,12 @@ class ScanActivity : AppCompatActivity() {
                 // Bluetooth is not enabled, prompt the user to turn it on
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                 startActivityForResult(enableBtIntent, bluetoothEnableRequestCode)
-            } else {
+            } else if(!isLocationEnabled()){
+                // Location is not enabled, prompt the user to turn it on
+                val locationSettingsIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivityForResult(locationSettingsIntent, locationEnableRequestCode)
+            }
+            else {
                 // Bluetooth is enabled, start scanning
                 handler.postDelayed({
                     scanning = false
