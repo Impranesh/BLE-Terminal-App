@@ -32,8 +32,7 @@ The application requires the following permissions:
 - `android.permission.BLUETOOTH_SCAN`
 - `android.permission.BLUETOOTH_CONNECT`
 - `android.permission.BLUETOOTH_ADMIN`
-If app supports a service and can run on Android 10 (API level 29) or Android 11, you must also declare the ACCESS_BACKGROUND_LOCATION permission to discover Bluetooth devices
--`android.permission.ACCESS_BACKGROUND_LOCATION`
+- `android.permission.ACCESS_BACKGROUND_LOCATION` (If app supports a service and can run on Android 10 (API level 29) or Android 11, you must also declare the "ACCESS_BACKGROUND_LOCATION" permission to discover Bluetooth devices.)
 - `android.permission.ACCESS_FINE_LOCATION`
 - `android.permission.POST_NOTIFICATIONS`
 
